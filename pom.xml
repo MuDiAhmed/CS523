@@ -79,7 +79,7 @@
                 <!--        <filtering>true</filtering>-->
                 <includes>
                     <include>**/*.properties</include>
-                    <include>**/*.ppk</include>
+                    <include>**/*.conf</include>
                 </includes>
             </resource>
         </resources>
