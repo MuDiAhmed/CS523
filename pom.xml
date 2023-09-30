@@ -15,6 +15,7 @@
     <modules>
         <module>Receiver</module>
         <module>Producer</module>
+        <module>HBase</module>
     </modules>
 
     <properties>

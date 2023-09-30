@@ -9,6 +9,7 @@
         <outputRelativeToContentRoot value="true" />
         <module name="Producer" />
         <module name="Receiver" />
+        <module name="HBase" />
       </profile>
     </annotationProcessing>
     <bytecodeTargetLevel>
