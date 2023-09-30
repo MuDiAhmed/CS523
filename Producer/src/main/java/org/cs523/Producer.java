@@ -5,7 +5,11 @@ import com.typesafe.config.ConfigFactory;
 import org.apache.kafka.clients.producer.KafkaProducer;
 import org.apache.kafka.clients.producer.ProducerConfig;
 import org.apache.kafka.clients.producer.ProducerRecord;
+import org.apache.commons.csv.CSVFormat;
+import org.apache.commons.csv.CSVRecord;
 
+import java.io.FileReader;
+import java.io.Reader;
 import java.util.Properties;
 
 public class Producer
@@ -20,12 +24,22 @@ public class Producer
 
         KafkaProducer<Long, String> producer = new KafkaProducer<>(properties);
 
-        ProducerRecord<Long, String> producerRecord =
-                new ProducerRecord<>(applicationConf.getString("spark.kafka.topics.in"), "hello world");
-        producer.send(producerRecord);
-        producer.flush();
-        producer.close();
+        String csvFilePath = "src/main/data/NYC_jobs.csv";
+        String kafkaTopic = applicationConf.getString("spark.kafka.topics.in");
 
+        try (Reader reader = new FileReader(csvFilePath)) {
+            Iterable<CSVRecord> records = CSVFormat.DEFAULT.parse(reader);
+            for (CSVRecord record : records) {
+                String csvData = record.toString();
+                ProducerRecord<Long, String> producerRecord = new ProducerRecord<>(kafkaTopic, csvData);
+                producer.send(producerRecord);
+            }
+            producer.flush();
+        } catch (Exception e) {
+            e.printStackTrace();
+        } finally {
+            producer.close();
+        }
 
     }
 }
