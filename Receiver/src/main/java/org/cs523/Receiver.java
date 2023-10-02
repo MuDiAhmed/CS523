@@ -28,7 +28,7 @@ public class Receiver {
                 .config("spark.streaming.backpressure.initialRate", 10)
                 .getOrCreate();
 
-        spark.sparkContext().setLogLevel("WARN");
+        spark.sparkContext().setLogLevel("ALL");
 
         Dataset<Row> lines = spark
                 .readStream()
@@ -36,17 +36,11 @@ public class Receiver {
                 .option("kafka.bootstrap.servers", kafkaBootstrapServer)
                 .option("subscribe", kafkaTopic)
                 .option("startingOffsets", "earliest")
-                .option("spark.streaming.backpressure.enabled", true)
-                .option("spark.streaming.backpressure.initialRate", 10)
-                .load();
-//                .selectExpr("CAST(value AS STRING)");
-
-
-        //TODO:: decide business data schema based on producer
-//        Dataset<Row> wordCounts = lines
-//                .flatMap((FlatMapFunction<String, String>) x -> Arrays.asList(x.split(" ")).iterator(), Encoders.STRING())
-//                .groupBy("value")
-//                .count();
+                .option("failOnDataLoss", false)
+                .option("kafkaConsumer.pollTimeoutMs", 30000)
+                .option("maxOffsetsPerTrigger", 10)
+                .load()
+                .selectExpr("CAST(value AS STRING)");
 
 
         //TODO:: insert data using HBase insert
