@@ -9,7 +9,9 @@ import org.apache.commons.csv.CSVFormat;
 import org.apache.commons.csv.CSVRecord;
 
 import java.io.*;
+import java.util.Arrays;
 import java.util.Properties;
+import java.util.stream.Collectors;
 
 public class Producer
 {
@@ -28,7 +30,7 @@ public class Producer
             String kafkaTopic = applicationConf.getString("spark.kafka.topics.in");
             Iterable<CSVRecord> records = CSVFormat.DEFAULT.parse(reader);
             for (CSVRecord record : records) {
-                String csvData = record.toString();
+                String csvData = String.join(",", record.values());
                 ProducerRecord<Long, String> producerRecord = new ProducerRecord<>(kafkaTopic, csvData);
                 producer.send(producerRecord);
             }
