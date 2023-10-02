@@ -8,8 +8,7 @@ import org.apache.kafka.clients.producer.ProducerRecord;
 import org.apache.commons.csv.CSVFormat;
 import org.apache.commons.csv.CSVRecord;
 
-import java.io.FileReader;
-import java.io.Reader;
+import java.io.*;
 import java.util.Properties;
 
 public class Producer
@@ -22,12 +21,11 @@ public class Producer
         properties.setProperty(ProducerConfig.KEY_SERIALIZER_CLASS_CONFIG, applicationConf.getString("spark.kafka.key.serializer"));
         properties.setProperty(ProducerConfig.VALUE_SERIALIZER_CLASS_CONFIG, applicationConf.getString("spark.kafka.value.serializer"));
 
-        KafkaProducer<Long, String> producer = new KafkaProducer<>(properties);
+        String csvFilePath = applicationConf.getString("spark.data.sample.path");
 
-        String csvFilePath = "src/main/data/NYC_jobs.csv";
-        String kafkaTopic = applicationConf.getString("spark.kafka.topics.in");
+        try (KafkaProducer<Long, String> producer = new KafkaProducer<>(properties); Reader reader = new FileReader(csvFilePath)) {
 
-        try (Reader reader = new FileReader(csvFilePath)) {
+            String kafkaTopic = applicationConf.getString("spark.kafka.topics.in");
             Iterable<CSVRecord> records = CSVFormat.DEFAULT.parse(reader);
             for (CSVRecord record : records) {
                 String csvData = record.toString();
@@ -37,8 +35,6 @@ public class Producer
             producer.flush();
         } catch (Exception e) {
             e.printStackTrace();
-        } finally {
-            producer.close();
         }
 
     }
