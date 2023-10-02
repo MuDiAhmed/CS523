@@ -12,7 +12,6 @@ import org.apache.hadoop.hbase.util.Bytes;
 import org.apache.spark.sql.ForeachWriter;
 
 import java.io.IOException;
-import java.util.ArrayList;
 import java.util.List;
 
 public class HBase extends ForeachWriter<JobPost>
@@ -24,31 +23,6 @@ public class HBase extends ForeachWriter<JobPost>
     private static List<String> hbaseColumnsFamily;
     private Table table;
     private Connection connection;
-
-    public static void initiate() throws IOException {
-
-    }
-
-    public static void insert(List<String> insertedData) throws IOException {
-        if(hbaseZookeeper == null || hbasePort == null){
-            throw new RuntimeException("Please initialize HBase module first");
-        }
-        Configuration config = HBaseConfiguration.create();
-        config.set("hbase.zookeeper.quorum", hbaseZookeeper);
-        config.set("hbase.zookeeper.property.clientPort", hbasePort);
-        try (Connection connection = ConnectionFactory.createConnection(config); Table table = connection.getTable(tableName)) {
-            List<Put> rows = new ArrayList<>();
-            for(String currentRow: insertedData){
-                String[] columns = currentRow.split("\t");
-
-                Put put = new Put(columns[0].getBytes());
-                //TODO:: decide table schema
-                put.addColumn(hbaseColumnsFamily.get(0).getBytes(), Bytes.toBytes("name"), columns[1].getBytes());
-                rows.add(put);
-            }
-            table.put(rows);
-        }
-    }
 
     @Override
     public boolean open(long l, long l1) {

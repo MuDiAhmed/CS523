@@ -5,6 +5,7 @@ import com.typesafe.config.ConfigFactory;
 import org.apache.commons.csv.CSVFormat;
 import org.apache.commons.csv.CSVParser;
 import org.apache.commons.csv.CSVRecord;
+import org.apache.hadoop.mapreduce.Job;
 import org.apache.spark.api.java.function.FlatMapFunction;
 import org.apache.spark.api.java.function.MapFunction;
 import org.apache.spark.sql.*;
@@ -19,7 +20,7 @@ import java.io.IOException;
 import java.util.List;
 
 public class Receiver {
-    public static void main(String[] args) throws StreamingQueryException, IOException {
+    public static void main(String[] args) throws StreamingQueryException {
 
         Config applicationConf = ConfigFactory.parseResources("application.conf").resolve();
         String applicationName = applicationConf.getString("spark.app.name");
@@ -28,7 +29,6 @@ public class Receiver {
         String kafkaTopic = applicationConf.getString("spark.kafka.topics.in");
         String kafkaValueDeserializer = applicationConf.getString("spark.kafka.value.deserializer");
         String kafkaKeyDeserializer = applicationConf.getString("spark.kafka.key.deserializer");
-//        HBase.initiate();
 
         SparkSession spark = SparkSession
                 .builder()
@@ -54,19 +54,25 @@ public class Receiver {
                 .load()
                 .selectExpr("CAST(value AS String)");
 
-        Dataset<String> csvRows = lines
+        //TODO:: add analysis (e.g aggregation) logic
+        Dataset<JobPost> csvRows = lines
                 .flatMap((FlatMapFunction<Row, CSVRecord>) line -> {
                     String value = line.getAs(0);
                     List<CSVRecord> records = CSVParser.parse(value, CSVFormat.DEFAULT).getRecords();
                     return records.iterator();
                 }, Encoders.kryo(CSVRecord.class))
-                .map((MapFunction<CSVRecord, String>) record -> record.values()[0], Encoders.STRING());
+                .map((MapFunction<CSVRecord, JobPost>) record -> {
+                    String id = record.values()[0];
+                    String title = record.values()[1];
+                    JobPost jobPost = new JobPost(id, title);
+                    return jobPost;
+                }, Encoders.kryo(JobPost.class));
 
-        //TODO:: insert data using HBase insert
         StreamingQuery query = csvRows
                 .writeStream()
                 .format("console")
                 .outputMode("append")
+                .foreach(new HBase())
                 .start();
 
         query.awaitTermination();
